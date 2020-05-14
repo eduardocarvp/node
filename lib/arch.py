@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .odst import ODST
+from .nn_utils import Lambda
 
 
 class DenseBlock(nn.Sequential):
@@ -35,3 +36,16 @@ class DenseBlock(nn.Sequential):
         if not self.flatten_output:
             outputs = outputs.view(*outputs.shape[:-1], self.num_layers * self.layer_dim, self.tree_dim)
         return outputs
+
+
+def Node(torch.nn.Module):
+    def __init__(self, input_dim, output_dim):
+        self.layers = nn.Sequential(
+            DenseBlock(num_features, layer_dim=layer_dim, num_layers=num_layers,
+                        tree_dim=num_classes + 1, flatten_output=False,
+                        depth=6, choice_function=lib.entmax15, bin_function=lib.entmoid15),
+            Lambda(lambda x: x[..., :num_classes].mean(dim=-2)),
+        )
+    
+    def forward(self, x):
+        return self.layers(x)

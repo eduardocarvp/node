@@ -446,3 +446,30 @@ DATASETS = {
     'YAHOO': fetch_YAHOO,
     'CLICK': fetch_CLICK,
 }
+
+def preprocess(df, target, split_indices=None, seed=42):
+    data = pd.read_csv(csv_path, index_col=0)
+    X, y = df.drop(columns=[target]), df[target]
+
+    # split data
+    if split_indices is None:
+        X_train, X_val, y_train, y_val = train_test_split(
+           X, y, test_size=0.2, random_state=validation_seed
+        )
+        X_valid, X_test, y_valid, y_test = train_test_split(
+            X_valid, y_valid, test_size=0.5, random_state=validation_seed
+        )
+
+    cat_features = df.columns[df.dtypes = object]
+    
+    cat_encoder = LeaveOneOutEncoder()
+    cat_encoder.fit(X_train[cat_features], y_train)
+    X_train[cat_features] = cat_encoder.transform(X_train[cat_features])
+    X_val[cat_features] = cat_encoder.transform(X_val[cat_features])
+    X_test[cat_features] = cat_encoder.transform(X_test[cat_features])
+
+    return dict(
+        X_train=X_train.values.astype('float32'), y_train=y_train,
+        X_valid=X_val.values.astype('float32'), y_valid=y_val,
+        X_test=X_test.values.astype('float32'), y_test=y_test
+    )

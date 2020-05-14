@@ -10,7 +10,7 @@ from .utils import get_latest_file, iterate_minibatches, check_numpy, process_in
 from .nn_utils import to_one_hot
 from collections import OrderedDict
 from copy import deepcopy
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 
 from sklearn.metrics import roc_auc_score, log_loss
 
@@ -43,7 +43,7 @@ class Trainer(nn.Module):
         self.experiment_path = os.path.join('logs/', experiment_name)
         if not warm_start and experiment_name != 'debug':
             assert not os.path.exists(self.experiment_path), 'experiment {} already exists'.format(experiment_name)
-        self.writer = SummaryWriter(self.experiment_path, comment=experiment_name)
+        # self.writer = SummaryWriter(self.experiment_path, comment=experiment_name)
         if warm_start:
             self.load_checkpoint()
     
@@ -124,7 +124,7 @@ class Trainer(nn.Module):
         loss.backward()
         self.opt.step()
         self.step += 1
-        self.writer.add_scalar('train loss', loss.item(), self.step)
+        # self.writer.add_scalar('train loss', loss.item(), self.step)
         
         return {'loss': loss}
 
