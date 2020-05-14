@@ -1,14 +1,9 @@
 [tool.poetry]
-name = "pytorch_tabnet"
-version = "1.0.6"
-description = "PyTorch implementation of TabNet"
-homepage = "https://github.com/dreamquark-ai/tabnet"
-repository = "https://github.com/dreamquark-ai/tabnet"
-documentation = "https://github.com/dreamquark-ai/tabnet"
+name = "node"
+version = "0.0.0"
+description = "node factory"
 readme = "README.md"
 authors = []
-keywords = ["tabnet", "pytorch", "neural-networks" ]
-exclude = ["tabnet/*.ipynb"]
 
 [tool.poetry.dependencies]
 python = "^3.6"
@@ -27,7 +22,7 @@ wget="3.2"
 pandas="0.25.3"
 flake8="3.7.9"
 qhoptim="1.1.0"
-catboost=="0.12.2"
+catboost="0.12.2"
 prefetch_generator="1.0.1"
 requests="2.23.0"
 category_encoders="2.2.2"
@@ -35,5 +30,5 @@ category_encoders="2.2.2"
 
 [build-system]
 requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"]
+build-backend = ["poetry.masonry.api"]
 

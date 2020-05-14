@@ -11,7 +11,7 @@ PORT=8889
 .SILENT: ;
 default: help;   # default target
 
-IMAGE_NAME=tabnet:latest
+IMAGE_NAME=node:latest
 IMAGE_RELEASER_NAME=release-changelog:latest
 
 DOCKER_RUN = docker run  --rm  -v ${FOLDER}:/work -w /work --entrypoint bash -lc ${IMAGE_NAME} -c

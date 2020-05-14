@@ -1,13 +1,8 @@
 import torch
 import numpy as np
 from abc import abstractmethod
-from pytorch_tabnet import tab_network
-from pytorch_tabnet.multiclass_utils import unique_labels
 from sklearn.metrics import roc_auc_score, mean_squared_error, accuracy_score
 from torch.nn.utils import clip_grad_norm_
-from pytorch_tabnet.utils import (PredictDataset,
-                                  create_dataloaders,
-                                  create_explain_matrix)
 from sklearn.base import BaseEstimator
 from torch.utils.data import DataLoader
 import copy
@@ -22,13 +17,16 @@ import torch.nn.functional as F
 from qhoptim.pyt import QHAdam
 from tqdm import tqdm
 
-from utils import iterate_minibatches
+from .utils import iterate_minibatches
+from .trainer import Trainer
 
 
 class Model(BaseEstimator):
-    def __init__(self, layer_dim=128, num_layers=2, seed=42):
+    def __init__(self, layer_dim=64, num_layers=1, tree_dim=4,
+                 seed=42, device_name='auto'):
         self.layer_dim = layer_dim
         self.num_layers = num_layers
+        self.tree_dim = tree_dim
 
         self.seed = seed
         torch.manual_seed(self.seed)
@@ -49,11 +47,14 @@ class Model(BaseEstimator):
         num_classes = len(set(y_train))
 
         self.network = Node(input_dim=num_features,
-                            output_dim=num_classes)
+                            output_dim=num_classes,
+                            layer_dim=self.layer_dim,
+                            num_layers=self.num_layers,
+                            tree_dim=self.tree_dim)
 
-        trainer = lib.Trainer(
+        trainer = Trainer(
             model=self.network, loss_function=F.cross_entropy,
-            experiment_name=experiment_name,
+            experiment_name='debug',
             warm_start=False,
             Optimizer=QHAdam,
             optimizer_params=dict(nus=(0.7, 1.0), betas=(0.95, 0.998)),
@@ -61,15 +62,15 @@ class Model(BaseEstimator):
             n_last_checkpoints=5
         )
 
-        loss_history, err_history = [], []
+        loss_history, auc_history = [], []
         best_val_auc = 0.
         best_step = 0
         early_stopping_rounds = 10_000
-        report_frequency = 100
+        report_frequency = 1
 
         for batch in iterate_minibatches(X_train, y_train, batch_size=1024, 
                                          shuffle=True, epochs=float('inf')):
-            metrics = trainer.train_on_batch(*batch, device=device)
+            metrics = trainer.train_on_batch(*batch, device=self.device)
             
             loss_history.append(metrics['loss'])
 
@@ -78,7 +79,7 @@ class Model(BaseEstimator):
                 trainer.average_checkpoints(out_tag='avg')
                 trainer.load_checkpoint(tag='avg')
                 auc = trainer.evaluate_auc(
-                    X_valid, y_valid, device=device, batch_size=1024)
+                    X_valid, y_valid, device=self.device, batch_size=1024)
                 
                 if auc > best_val_auc:
                     best_val_auc = auc
