@@ -17,7 +17,11 @@ import torch.nn.functional as F
 from qhoptim.pyt import QHAdam
 from tqdm import tqdm
 
-from .utils import iterate_minibatches
+from .utils import (
+    iterate_minibatches,
+    process_in_chunks,
+    check_numpy
+)
 from .trainer import Trainer
 
 
@@ -66,7 +70,7 @@ class Model(BaseEstimator):
         best_val_auc = 0.
         best_step = 0
         early_stopping_rounds = 10_000
-        report_frequency = 1
+        report_frequency = 100
 
         for batch in iterate_minibatches(X_train, y_train, batch_size=1024, 
                                          shuffle=True, epochs=float('inf')):
@@ -98,3 +102,13 @@ class Model(BaseEstimator):
                 print("Best step: ", best_step)
                 print("Best Val AUC: %0.5f" % (best_val_auc))
                 break
+
+    def predict(self, X):
+        X = torch.as_tensor(X, device=self.device)
+        self.network.train(False)
+
+        with torch.no_grad():
+            logits = F.softmax(process_in_chunks(self.network, X, batch_size=1024))
+            logits = check_numpy(logits)
+
+        return logits
