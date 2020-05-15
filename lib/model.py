@@ -55,6 +55,7 @@ class Model(BaseEstimator):
                             layer_dim=self.layer_dim,
                             num_layers=self.num_layers,
                             tree_dim=self.tree_dim)
+        self.network.to(self.device)
 
         trainer = Trainer(
             model=self.network, loss_function=F.cross_entropy,
