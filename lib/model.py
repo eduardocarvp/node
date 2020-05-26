@@ -23,6 +23,8 @@ from .utils import (
     check_numpy
 )
 from .trainer import Trainer
+from IPython.display import clear_output
+import matplotlib.pyplot as plt
 
 
 class Model(BaseEstimator):
@@ -45,7 +47,9 @@ class Model(BaseEstimator):
         print(f"Device used : {self.device}")
 
     def fit(self, X_train, y_train,
-            X_valid=None, y_valid=None):
+            X_valid=None, y_valid=None,
+            plot=False, early_stopping_rounds=10_000,
+            report_frequency=100):
 
         num_features = X_train.shape[1]
         num_classes = len(set(y_train))
@@ -70,8 +74,6 @@ class Model(BaseEstimator):
         loss_history, auc_history = [], []
         best_val_auc = 0.
         best_step = 0
-        early_stopping_rounds = 10_000
-        report_frequency = 100
 
         for batch in iterate_minibatches(X_train, y_train, batch_size=1024, 
                                          shuffle=True, epochs=float('inf')):
@@ -95,14 +97,27 @@ class Model(BaseEstimator):
                 trainer.load_checkpoint()  # last
                 trainer.remove_old_temp_checkpoints()
                 
-                print("Loss %.5f" % (metrics['loss']))
-                print("Val AUC: %0.5f" % (auc))
+                if plot:
+                    clear_output(True)
+                    plt.figure(figsize=[12, 6])
+                    plt.subplot(1, 2, 1)
+                    plt.plot(loss_history)
+                    plt.grid()
+                    plt.subplot(1,2,2)
+                    plt.plot(auc_history)
+                    plt.grid()
+                    plt.show()
+
+                    print("Loss %.5f" % (metrics['loss']))
+                    print("Val AUC: %0.5f" % (auc))
                 
             if trainer.step > best_step + early_stopping_rounds:
                 print('BREAK. There is no improvment for {} steps'.format(early_stopping_rounds))
                 print("Best step: ", best_step)
                 print("Best Val AUC: %0.5f" % (best_val_auc))
                 break
+
+        trainer.load_checkpoint(tag='best')
 
     def predict(self, X):
         X = torch.as_tensor(X, device=self.device)
