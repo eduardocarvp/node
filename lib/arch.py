@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .odst import ODST
+import numpy as np
 from .nn_utils import (
     Lambda,
     entmax15,
@@ -114,14 +115,20 @@ class EmbeddingGenerator(torch.nn.Module):
 
 
 class Node(torch.nn.Module):
-    def __init__(self, input_dim, output_dim, layer_dim, num_layers, tree_dim):
+    def __init__(self, input_dim, output_dim, layer_dim, num_layers, tree_dim,
+                 cat_dims, cat_idxs, cat_emb_dim):
         super().__init__()
+
+        self.embedder = EmbeddingGenerator(input_dim, cat_dims, cat_idxs, cat_emb_dim)
+        self.post_embed_dim = self.embedder.post_embed_dim
+
         self.layers = nn.Sequential(
-            DenseBlock(input_dim, layer_dim=layer_dim, num_layers=num_layers,
+            DenseBlock(self.post_embed_dim, layer_dim=layer_dim, num_layers=num_layers,
                         tree_dim=tree_dim, flatten_output=False,
                         depth=6, choice_function=entmax15, bin_function=entmoid15),
             Lambda(lambda x: x[..., :output_dim].mean(dim=-2)),
         )
     
     def forward(self, x):
+        x = self.embedder(x)
         return self.layers(x)

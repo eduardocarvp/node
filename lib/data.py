@@ -21,7 +21,8 @@ def preprocess(df, target, split_indices=None,
               seed=42, normalize=True,
               quantile_transform=True,
               quantile_noise=0,
-              output_distribution='normal'
+              output_distribution='normal',
+              encoder='label_encoder'
 ):
     X, y = df.drop(columns=[target]), df[target]
     
@@ -43,19 +44,34 @@ def preprocess(df, target, split_indices=None,
         X_test, y_test = X.loc[split_indices['test']], y[split_indices['test']]
 
     cat_features = X.columns[X.dtypes == object]
+    cat_idxs = [i for i in range(len(X.columns)) if X.columns[i] in cat_features]
+    cat_dims = []
 
-    cat_encoder = LeaveOneOutEncoder()
-    cat_encoder.fit(X_train[cat_features], y_train)
-    X_train[cat_features] = cat_encoder.transform(X_train[cat_features])
-    X_valid[cat_features] = cat_encoder.transform(X_valid[cat_features])
-    X_test[cat_features] = cat_encoder.transform(X_test[cat_features])
+    num_features = [feat for feat in X.columns if feat not in cat_features]
+
+    print(num_features)
+
+    if encoder == 'cat_encoder':
+        cat_encoder = LeaveOneOutEncoder()
+        cat_encoder.fit(X_train[cat_features], y_train)
+        X_train[cat_features] = cat_encoder.transform(X_train[cat_features])
+        X_valid[cat_features] = cat_encoder.transform(X_valid[cat_features])
+        X_test[cat_features] = cat_encoder.transform(X_test[cat_features])
+    elif encoder == 'label_encoder':
+        for col in cat_features:
+            lab_encoder = LabelEncoder()
+            lab_encoder.fit(X[col].fillna("VV_likely"))
+            X_train[col] = lab_encoder.transform(X_train[col].fillna("VV_likely").values)
+            X_valid[col] = lab_encoder.transform(X_valid[col].fillna("VV_likely").values)
+            X_test[col] = lab_encoder.transform(X_test[col].fillna("VV_likely").values)
+            cat_dims.append(len(lab_encoder.classes_))
 
     if normalize:
-        mean = np.mean(X_train, axis=0)
-        std = np.std(X_train, axis=0)
-        X_train = (X_train - mean) / std
-        X_valid = (X_valid - mean) / std
-        X_test = (X_test - mean) / std
+        mean = np.mean(X_train[num_features], axis=0)
+        std = np.std(X_train[num_features], axis=0)
+        X_train[num_features] = (X_train[num_features] - mean) / std
+        X_valid[num_features] = (X_valid[num_features] - mean) / std
+        X_test[num_features] = (X_test[num_features] - mean) / std
 
     if quantile_transform:
         quantile_train = np.copy(X_train)
@@ -72,5 +88,7 @@ def preprocess(df, target, split_indices=None,
     return dict(
         X_train=X_train.astype('float32'), y_train=y_train,
         X_valid=X_valid.astype('float32'), y_valid=y_valid,
-        X_test=X_test.astype('float32'), y_test=y_test
+        X_test=X_test.astype('float32'), y_test=y_test,
+        cat_idxs=cat_idxs,
+        cat_dims=cat_dims,
     )
