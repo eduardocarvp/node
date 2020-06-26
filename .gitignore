@@ -9,6 +9,7 @@ node_modules
 notebooks/data/*
 notebooks/runs/*
 notebooks/.ipynb_checkpoints/*
+logs/
 
 env.sh
 # Byte-compiled / optimized / DLL files
@@ -77,3 +78,6 @@ debian/files
 *.debhelper.log
 
 .vscode
+
+# csv files
+*.csv
