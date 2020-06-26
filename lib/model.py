@@ -28,14 +28,18 @@ import matplotlib.pyplot as plt
 
 
 class Model(BaseEstimator):
-    def __init__(self, layer_dim=64, num_layers=1, tree_dim=4,
-                 seed=42, device_name='auto', cat_idxs=None, cat_dims=None, cat_emb_dim=2):
+    def __init__(self, input_dim, output_dim,
+                 layer_dim=512, num_layers=1, tree_dim=4,
+                 seed=42, device_name='auto',
+                 cat_idxs=None, cat_dims=None, cat_emb_dim=2,
+                 experiment_name='debug'):
         self.layer_dim = layer_dim
         self.num_layers = num_layers
         self.tree_dim = tree_dim
         self.cat_idxs = cat_idxs
         self.cat_dims = cat_dims
         self.cat_emb_dim = cat_emb_dim
+        self.experiment_name = experiment_name
 
         self.seed = seed
         torch.manual_seed(self.seed)
@@ -47,15 +51,8 @@ class Model(BaseEstimator):
                 device_name = 'cpu'
         self.device = torch.device(device_name)
 
-        print(f"Device used : {self.device}")
-
-    def fit(self, X_train, y_train,
-            X_valid=None, y_valid=None,
-            plot=False, early_stopping_rounds=10_000,
-            report_frequency=20):
-
-        num_features = X_train.shape[1]
-        num_classes = len(set(y_train))
+        num_features = input_dim
+        num_classes = output_dim
 
         self.network = Node(input_dim=num_features,
                             output_dim=num_classes,
@@ -69,13 +66,20 @@ class Model(BaseEstimator):
 
         self.trainer = Trainer(
             model=self.network, loss_function=F.cross_entropy,
-            experiment_name='debug',
+            experiment_name=self.experiment_name,
             warm_start=False,
             Optimizer=torch.optim.Adam,  # QHAdam,
             optimizer_params=dict(lr=5e-3),  # dict(nus=(0.7, 1.0), betas=(0.95, 0.998)),
             verbose=True,
             n_last_checkpoints=5
         )
+
+        print(f"Device used : {self.device}")
+
+    def fit(self, X_train, y_train,
+            X_valid=None, y_valid=None,
+            plot=False, early_stopping_rounds=10_000,
+            report_frequency=20):
 
         loss_history, auc_history = [], []
         best_val_auc = 0.
@@ -130,7 +134,7 @@ class Model(BaseEstimator):
         self.network.train(False)
 
         with torch.no_grad():
-            logits = F.softmax(process_in_chunks(self.network, X, batch_size=1024))
+            logits = F.softmax(process_in_chunks(self.network, X, batch_size=1024), dim=1)
             logits = check_numpy(logits)
 
         return logits

@@ -22,7 +22,7 @@ def preprocess(df, target, split_indices=None,
               quantile_transform=True,
               quantile_noise=0,
               output_distribution='normal',
-              encoder='label_encoder'
+              encoder='cat_encoder'
 ):
     X, y = df.drop(columns=[target]), df[target]
     

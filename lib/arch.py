@@ -119,8 +119,13 @@ class Node(torch.nn.Module):
                  cat_dims, cat_idxs, cat_emb_dim):
         super().__init__()
 
-        self.embedder = EmbeddingGenerator(input_dim, cat_dims, cat_idxs, cat_emb_dim)
-        self.post_embed_dim = self.embedder.post_embed_dim
+        if cat_idxs is not None:
+            self.embedder = EmbeddingGenerator(input_dim, cat_dims, cat_idxs, cat_emb_dim)
+            self.post_embed_dim = self.embedder.post_embed_dim
+            self.embedding = True
+        else:
+            self.post_embed_dim = input_dim
+            self.embedding = False
 
         self.layers = nn.Sequential(
             DenseBlock(self.post_embed_dim, layer_dim=layer_dim, num_layers=num_layers,
@@ -130,5 +135,6 @@ class Node(torch.nn.Module):
         )
     
     def forward(self, x):
-        x = self.embedder(x)
+        if self.embedding:
+            x = self.embedder(x)
         return self.layers(x)
