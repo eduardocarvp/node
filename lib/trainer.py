@@ -104,6 +104,11 @@ class Trainer(nn.Module):
         assert len(list_of_files) > 0, "No files found: " + pattern
         return sorted(list_of_files, key=os.path.getctime, reverse=True)[:n_last]
 
+    def remove_all_checkpoints(self):
+        paths = self.get_latest_checkpoints(os.path.join(self.experiment_path, 'checkpoint_temp*.pth'))
+        for ckpt in paths:
+            os.remove(ckpt)
+
     def remove_old_temp_checkpoints(self, number_ckpts_to_keep=None):
         if number_ckpts_to_keep is None:
             number_ckpts_to_keep = self.n_last_checkpoints

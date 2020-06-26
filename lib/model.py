@@ -32,7 +32,8 @@ class Model(BaseEstimator):
                  layer_dim=512, num_layers=1, tree_dim=4,
                  seed=42, device_name='auto',
                  cat_idxs=None, cat_dims=None, cat_emb_dim=2,
-                 experiment_name='debug'):
+                 experiment_name='debug',
+                 clean_logs=True):
         self.layer_dim = layer_dim
         self.num_layers = num_layers
         self.tree_dim = tree_dim
@@ -73,6 +74,9 @@ class Model(BaseEstimator):
             verbose=True,
             n_last_checkpoints=5
         )
+
+        if clean_logs:
+            self.trainer.remove_all_checkpoints()
 
         print(f"Device used : {self.device}")
 
