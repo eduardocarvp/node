@@ -22,13 +22,17 @@ def preprocess(df, target, split_indices=None,
               quantile_transform=True,
               quantile_noise=0,
               output_distribution='normal',
-              encoder='cat_encoder'
+              encoder='cat_encoder',
+              experiment_type='classification'
 ):
     X, y = df.drop(columns=[target]), df[target]
     
     # encode target
-    l_enc = LabelEncoder()
-    y = l_enc.fit_transform(y.values)
+    if experiment_type == 'classification':
+        l_enc = LabelEncoder()
+        y = l_enc.fit_transform(y.values)
+    else:
+        y = y.values
 
     # split data
     if split_indices is None:

@@ -101,7 +101,7 @@ class Trainer(nn.Module):
 
     def get_latest_checkpoints(self, pattern, n_last=None):
         list_of_files = glob.glob(pattern)
-        assert len(list_of_files) > 0, "No files found: " + pattern
+        # assert len(list_of_files) > 0, "No files found: " + pattern
         return sorted(list_of_files, key=os.path.getctime, reverse=True)[:n_last]
 
     def remove_all_checkpoints(self):
@@ -118,14 +118,20 @@ class Trainer(nn.Module):
         for ckpt in paths_to_delete:
             os.remove(ckpt)
 
-    def train_on_batch(self, *batch, device):
+    def train_on_batch(self, *batch, device, experiment_type='classification'):
         x_batch, y_batch = batch
         x_batch = torch.as_tensor(x_batch, device=device)
         y_batch = torch.as_tensor(y_batch, device=device)
 
+        if experiment_type == 'regression':
+            y_batch = y_batch.float()
+
         self.model.train()
         self.opt.zero_grad()
-        loss = self.loss_function(self.model(x_batch), y_batch).mean()
+        a = self.model(x_batch)
+        b = y_batch.view(-1, 1)
+        # print(a.shape, b.shape)
+        loss = self.loss_function(a, b)
         loss.backward()
         self.opt.step()
         self.step += 1
@@ -150,7 +156,7 @@ class Trainer(nn.Module):
         with torch.no_grad():
             prediction = process_in_chunks(self.model, X_test, batch_size=batch_size)
             prediction = check_numpy(prediction)
-            error_rate = ((y_test - prediction) ** 2).mean()
+            error_rate = ((y_test.reshape(-1,1) - prediction) ** 2).mean()
         return error_rate
     
     def evaluate_auc(self, X_test, y_test, device, batch_size=512):
