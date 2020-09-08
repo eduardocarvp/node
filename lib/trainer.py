@@ -129,9 +129,9 @@ class Trainer(nn.Module):
         self.model.train()
         self.opt.zero_grad()
         a = self.model(x_batch)
-        b = y_batch.view(-1, 1)
+        # b = y_batch.view(-1, 1)
         # print(a.shape, b.shape)
-        loss = self.loss_function(a, b)
+        loss = self.loss_function(a, y_batch)
         loss.backward()
         self.opt.step()
         self.step += 1
